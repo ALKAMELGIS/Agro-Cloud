@@ -19,6 +19,13 @@ interface SubMenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    id: 'home',
+    label: 'Home',
+    icon: 'fa-solid fa-house',
+    color: '#22C55E',
+    to: '/'
+  },
+  {
     id: 'dashboard',
     label: 'Dashboard',
     icon: 'fa-solid fa-chart-line',
@@ -60,6 +67,17 @@ const menuItems: MenuItem[] = [
       { label: 'Soil Sensors', icon: 'fa-solid fa-seedling', to: '/sensors/soil' },
       { label: 'Weather Sensors', icon: 'fa-solid fa-cloud-sun', to: '/sensors/weather' },
       { label: 'Irrigation Sensors', icon: 'fa-solid fa-faucet-drip', to: '/sensors/irrigation' },
+      { label: 'Camera', icon: 'fa-solid fa-camera', to: '/sensors/camera' },
+    ]
+  },
+  {
+    id: 'master',
+    label: 'Master Data',
+    icon: 'fa-solid fa-gear',
+    color: '#64748B',
+    items: [
+      { label: 'Workflow & Data Sources', icon: 'fa-solid fa-sliders', to: '/master/workflow-settings' },
+      { label: 'GIS Content', icon: 'fa-solid fa-map', to: '/master/gis-content' },
     ]
   },
   {
@@ -69,6 +87,7 @@ const menuItems: MenuItem[] = [
     color: '#1E293B', // Dark
     items: [
       { label: 'User Management', icon: 'fa-solid fa-users', to: '/admin/users' },
+      { label: 'GitHub Integration', icon: 'fa-brands fa-github', to: '/admin/github' },
     ]
   }
 ]

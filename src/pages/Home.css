@@ -20,34 +20,17 @@
 /* Grid View */
 .home-grid-view {
   width: 100%;
-  container-type: inline-size;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scrollbar-gutter: stable both-edges;
-  -webkit-overflow-scrolling: touch;
-  scroll-snap-type: x mandatory;
-}
-
-.home-grid-view::-webkit-scrollbar {
-  height: 10px;
-}
-
-.home-grid-view::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.16);
-  border-radius: 999px;
-}
-
-.home-grid-view::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.06);
-  border-radius: 999px;
+  overflow: visible;
+  scrollbar-gutter: auto;
 }
 
 .app-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: clamp(14px, 2.6vw, 32px);
-  padding: clamp(8px, 1.4vw, 12px);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: clamp(12px, 2vw, 24px);
+  padding: clamp(8px, 1.2vw, 12px) 0;
   align-items: stretch;
+  width: 100%;
 }
 
 .app-icon-card {
@@ -61,9 +44,8 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid transparent;
   min-height: auto;
-  scroll-snap-align: start;
   text-align: center;
-  flex: 0 0 clamp(132px, 14vw, 180px);
+  width: 100%;
   position: relative;
   -webkit-tap-highlight-color: transparent;
 }
@@ -159,55 +141,15 @@
   }
 }
 
-@container (min-width: 980px) {
-  .home-grid-view {
-    overflow-x: visible;
-    scroll-snap-type: none;
-  }
-}
-
-@supports (container-type: inline-size) and (width: 1cqi) {
-  .app-grid {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: clamp(132px, 32cqi, 180px);
-    gap: clamp(14px, 2.6cqi, 32px);
-    padding: clamp(8px, 1.4cqi, 12px);
-  }
-
-  .app-icon-card {
-    min-height: clamp(148px, 18cqi, 190px);
-    flex: initial;
-  }
-
-  .icon-circle {
-    width: clamp(56px, 7cqi, 72px);
-    height: clamp(56px, 7cqi, 72px);
-    border-radius: clamp(16px, 2cqi, 20px);
-    font-size: clamp(22px, 2.8cqi, 28px);
-  }
-
-  .agri-app-svg {
-    width: clamp(34px, 4.2cqi, 40px);
-    height: clamp(34px, 4.2cqi, 40px);
-  }
-
-  .app-label {
-    font-size: clamp(13px, 1.6cqi, 16px);
-  }
-
-  @container (min-width: 980px) {
-    .app-grid {
-      grid-auto-columns: minmax(0, 1fr);
-    }
-  }
-}
-
 /* Tablet Responsive */
 @media (max-width: 1024px) {
   .home-page {
     padding: 32px;
     max-width: 100%;
+  }
+
+  .app-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -282,23 +224,23 @@
   width: 40px;
   height: 40px;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.7);
-  background: radial-gradient(circle at top left, #111827, #020617);
-  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.65);
+  background: #ffffff;
+  color: #0f172a;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 15px;
-  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
 }
 
 .back-btn:hover {
-  background: radial-gradient(circle at top left, #1f2937, #020617);
-  color: #ffffff;
+  background: #f8fafc;
+  color: #0f172a;
   border-color: rgba(59, 130, 246, 0.8);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.55);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.16);
   transform: translateX(-3px) translateY(-1px);
 }
 
@@ -553,4 +495,81 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Mobile-first hardening for app applications grid ---- */
+@media (max-width: 900px) {
+  .home-page {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 12px;
+    overflow-x: hidden;
+  }
+
+  .home-grid-view {
+    overflow: visible;
+    scrollbar-gutter: auto;
+  }
+
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    padding: 6px 0;
+    width: 100%;
+  }
+
+  .app-icon-card {
+    flex: initial;
+    width: 100%;
+    min-height: 108px;
+    padding: 10px 6px;
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .app-label {
+    font-size: 13px;
+    line-height: 1.25;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .mini-chev {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .app-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .app-icon-card {
+    min-height: 102px;
+  }
+
+  .app-icon {
+    margin-bottom: 8px;
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 380px) {
+  .home-page {
+    padding: 12px 10px;
+  }
+
+  .app-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .app-label {
+    font-size: 12px;
+  }
 }

@@ -196,7 +196,7 @@ function AppShell() {
   return (
     <>
       {showChrome && <HeaderBar />}
-      <div className={showChrome ? 'layout layout-sidebar' : 'layout'}>
+      <div className={showChrome ? 'layout layout-topnav' : 'layout'}>
         {showChrome && <NavMenu onLogout={handleLogout} />}
         <main className="content">
           <Suspense fallback={<div style={{ padding: 12 }}>Loading</div>}>

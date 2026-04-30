@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react'
 import './navmenu.css'
 import { hasPermission, normalizeRole } from '../lib/auth'
@@ -16,6 +16,7 @@ type AppNotification = {
 }
 
 export default function NavMenu({ onLogout }: NavMenuProps) {
+  const navigate = useNavigate()
   const getViewport = (): 'desktop' | 'tablet' | 'mobile' => {
     if (typeof window === 'undefined') return 'desktop'
     const w = window.innerWidth
@@ -25,11 +26,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
   }
   const [viewport, setViewport] = useState<'desktop' | 'tablet' | 'mobile'>(getViewport)
   const [isMobile, setIsMobile] = useState(() => getViewport() === 'mobile')
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('navCollapsed') === 'true'
-  })
+  const [menuOpen, setMenuOpen] = useState(() => getViewport() !== 'mobile')
   const [openGroup, setOpenGroup] = useState<
     'dashboard' | 'satellite' | 'data' | 'sensors' | 'master' | 'admin' | 'notifications' | 'language' | 'account' | null
   >(null)
@@ -77,7 +74,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
 
   const closeAllGroups = () => setOpenGroup(null)
   const closeAll = () => {
-    setMobileOpen(false)
+    if (isMobile) setMenuOpen(false)
     setOpenGroup(null)
   }
 
@@ -87,6 +84,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
       const next = getViewport()
       setViewport(next)
       setIsMobile(next === 'mobile')
+      setMenuOpen(prev => (next === 'mobile' ? prev : true))
     }
     update()
     window.addEventListener('resize', update)
@@ -94,11 +92,6 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
       window.removeEventListener('resize', update)
     }
   }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    localStorage.setItem('navCollapsed', collapsed ? 'true' : 'false')
-  }, [collapsed])
 
   useEffect(() => {
     closeAll()
@@ -122,7 +115,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
   useEffect(() => {
     if (openGroup !== 'notifications') return
     setNotifications(prev => prev.map(n => (n.read ? n : { ...n, read: true })))
-  }, [openGroup])
+  }, [openGroup, isMobile])
 
   useEffect(() => {
     const handleAnyPointerDown = (e: Event) => {
@@ -180,7 +173,17 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
     setOpenGroup(prev => (prev === group ? null : group))
   }
 
-  const flyoutMode = !isMobile && collapsed
+  const handlePrimaryGroupClick = (group: NonNullable<typeof openGroup>) => {
+    if (isMobile) {
+      navigate('/', { state: { openGroup: group } })
+      setMenuOpen(false)
+      setOpenGroup(null)
+      return
+    }
+    toggleGroup(group)
+  }
+
+  const flyoutMode = false
 
   const positionFlyout = (group: NonNullable<typeof openGroup>) => {
     if (typeof window === 'undefined') return
@@ -246,44 +249,37 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
     <nav
       className={[
         'navmenu',
-        mobileOpen ? 'navmenu-open' : '',
-        !isMobile && collapsed ? 'navmenu-collapsed' : ''
+        menuOpen ? 'navmenu-open' : ''
       ].filter(Boolean).join(' ')}
       aria-label="Primary"
       ref={navRef}
       data-viewport={viewport}
     >
       <button
-        className="nav-toggle"
-        type="button"
-        aria-label={mobileOpen ? 'Close navigation menu' : 'Open navigation menu'}
-        aria-expanded={mobileOpen}
-        aria-controls="primary-nav"
-        onClick={() => {
-          setMobileOpen(o => !o)
-          closeAllGroups()
-        }}
-      >
-        <i className={mobileOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
-      </button>
-      <button
         className="nav-collapse-toggle"
         type="button"
-        aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
-        aria-pressed={collapsed}
+        aria-label={
+          menuOpen ? 'Collapse navigation menu' : 'Expand navigation menu'
+        }
+        aria-expanded={menuOpen}
+        aria-pressed={menuOpen}
         aria-controls="primary-nav"
         onClick={() => {
-          setCollapsed(v => !v)
+          setMenuOpen(o => !o)
           closeAllGroups()
         }}
       >
-        <i className={collapsed ? 'fa-solid fa-angles-right' : 'fa-solid fa-angles-left'}></i>
+        <span className={`nav-toggle-bars${menuOpen ? ' is-open' : ''}`} aria-hidden="true">
+          <span className="nav-toggle-line nav-toggle-line-top"></span>
+          <span className="nav-toggle-line nav-toggle-line-mid"></span>
+          <span className="nav-toggle-line nav-toggle-line-bottom"></span>
+        </span>
       </button>
       <ul
         id="primary-nav"
         className="navmenu-list"
-        data-open={mobileOpen ? 'true' : 'false'}
-        aria-hidden={isMobile ? !mobileOpen : undefined}
+        data-open={menuOpen ? 'true' : 'false'}
+        aria-hidden={!menuOpen}
       >
         <li className="navmenu-li">
           <NavLink
@@ -312,7 +308,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
             aria-haspopup="true"
             aria-expanded={openGroup === 'dashboard'}
             aria-controls="nav-group-dashboard"
-            onClick={() => toggleGroup('dashboard')}
+            onClick={() => handlePrimaryGroupClick('dashboard')}
             onMouseEnter={() => {
               if (flyoutMode) positionFlyout('dashboard')
             }}
@@ -372,7 +368,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
             aria-haspopup="true"
             aria-expanded={openGroup === 'satellite'}
             aria-controls="nav-group-satellite"
-            onClick={() => toggleGroup('satellite')}
+            onClick={() => handlePrimaryGroupClick('satellite')}
             onMouseEnter={() => {
               if (flyoutMode) positionFlyout('satellite')
             }}
@@ -432,7 +428,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
             aria-haspopup="true"
             aria-expanded={openGroup === 'data'}
             aria-controls="nav-group-data"
-            onClick={() => toggleGroup('data')}
+            onClick={() => handlePrimaryGroupClick('data')}
             onMouseEnter={() => {
               if (flyoutMode) positionFlyout('data')
             }}
@@ -522,7 +518,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
             aria-haspopup="true"
             aria-expanded={openGroup === 'sensors'}
             aria-controls="nav-group-sensors"
-            onClick={() => toggleGroup('sensors')}
+            onClick={() => handlePrimaryGroupClick('sensors')}
             onMouseEnter={() => {
               if (flyoutMode) positionFlyout('sensors')
             }}
@@ -603,7 +599,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
               aria-haspopup="true"
               aria-expanded={openGroup === 'master'}
               aria-controls="nav-group-master"
-              onClick={() => toggleGroup('master')}
+              onClick={() => handlePrimaryGroupClick('master')}
               onMouseEnter={() => {
                 if (flyoutMode) positionFlyout('master')
               }}
@@ -665,7 +661,7 @@ export default function NavMenu({ onLogout }: NavMenuProps) {
             aria-haspopup="true"
             aria-expanded={openGroup === 'admin'}
             aria-controls="nav-group-admin"
-            onClick={() => toggleGroup('admin')}
+            onClick={() => handlePrimaryGroupClick('admin')}
             onMouseEnter={() => {
               if (flyoutMode) positionFlyout('admin')
             }}
