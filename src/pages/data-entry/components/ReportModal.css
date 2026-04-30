@@ -1,0 +1,544 @@
+/* Report Modal Modern Styles - Sleek & Minimalist Redesign */
+
+/* Visibility Utilities - STRICT ISOLATION MECHANISM */
+.print-only {
+  display: none !important;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+  .screen-only {
+    display: none !important;
+  }
+  
+  /* Ensure print content expands */
+  .print-narrative-section,
+  .print-table-section,
+  .print-charts-section,
+  .print-footer {
+    width: 100%;
+    margin-bottom: 2rem;
+  }
+}
+
+.report-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(2, 6, 23, 0.35);
+  backdrop-filter: blur(16px); /* Heavy blur for glass effect */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 30px;
+}
+
+.report-modal-overlay.open {
+  opacity: 1;
+}
+
+.report-modal-container {
+  background: var(--ds-color-surface);
+  width: 100%;
+  max-width: 90vw; /* Fluid width for large screens */
+  height: 90vh;
+  border-radius: 24px; /* More rounded */
+  box-shadow: 
+    0 20px 25px -5px rgba(2, 6, 23, 0.10),
+    0 8px 10px -6px rgba(2, 6, 23, 0.06),
+    0 0 0 1px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.98) translateY(10px);
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: var(--ds-font-sans);
+}
+
+.report-modal-overlay.open .report-modal-container {
+  transform: scale(1) translateY(0);
+}
+
+/* Header */
+.report-modal-header {
+  padding: 1.5rem 2rem;
+  background: var(--ds-color-surface);
+  border-bottom: 1px solid var(--ds-color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.report-modal-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ds-color-text);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.report-modal-title i {
+  color: var(--ds-color-primary);
+}
+
+.report-modal-subtitle {
+  font-size: 0.875rem;
+  color: var(--ds-color-text-muted);
+  margin-top: 0.25rem;
+  margin-left: 2rem;
+}
+
+.report-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.report-close-btn:hover {
+  background: var(--ds-color-surface-2);
+  color: var(--ds-color-danger);
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+/* Body */
+.report-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2rem;
+  background: var(--ds-color-bg);
+}
+
+/* Section Labels */
+.report-section-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ds-color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* Filters */
+.report-filters-section {
+  background: var(--ds-color-surface);
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid var(--ds-color-border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.report-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.report-filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.report-filter-group label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ds-color-text-muted);
+}
+
+.report-select, .report-input {
+  height: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--ds-color-border);
+  background: var(--ds-color-surface);
+  font-size: 0.9rem;
+  color: var(--ds-color-text);
+  outline: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.report-select:focus, .report-input:focus {
+  border-color: rgba(22, 163, 74, 0.6);
+  background: var(--ds-color-surface);
+  box-shadow: var(--ds-focus-ring);
+}
+
+/* Stats Cards */
+.report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.report-stat-card {
+  background: var(--ds-color-surface);
+  border-radius: 24px;
+  padding: 1.75rem;
+  border: 1px solid var(--ds-color-border);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.08), 0 4px 12px -4px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.report-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -12px rgba(22, 163, 74, 0.14);
+  border-color: rgba(22, 163, 74, 0.22);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.report-stat-card:hover .stat-icon {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.stat-icon.blue { background: #eff6ff; color: #3b82f6; }
+.stat-icon.green { background: #f0fdf4; color: #10b981; }
+.stat-icon.amber { background: #fffbeb; color: #f59e0b; }
+.stat-icon.purple { background: #f5f3ff; color: #8b5cf6; }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+/* Charts */
+.report-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.report-chart-container {
+  background: #ffffff;
+  border-radius: 24px;
+  padding: 2rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.report-chart-container:hover {
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Executive Summary */
+.report-summary-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 24px;
+  padding: 2rem;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.report-summary-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: #10b981;
+}
+
+.summary-text {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #334155;
+  font-weight: 400;
+}
+
+.summary-highlight {
+  font-weight: 600;
+  color: #059669;
+  background-color: #ecfdf5;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(16, 185, 129, 0.1);
+}
+
+/* Preview */
+.report-preview-section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+  display: none; /* Hidden by default, shown via toggle if needed */
+}
+
+.report-paper-preview {
+  background: white;
+  border: 1px solid #e2e8f0;
+  padding: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  margin: 0 auto;
+  max-width: 210mm; /* A4 width */
+  min-height: 297mm; /* A4 height */
+}
+
+/* Footer */
+.report-modal-footer {
+  padding: 1rem 2rem;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.report-footer-info {
+  font-size: 0.875rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.report-footer-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .report-modal-container {
+    height: 100vh;
+    max-width: 100vw;
+    border-radius: 0;
+  }
+  
+  .report-charts-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .report-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Print Table Styles - Luxury */
+.ec-print-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.ec-print-table th {
+  text-align: left;
+  padding: 1rem;
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.ec-print-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  transition: background 0.2s;
+}
+
+.ec-print-table tr:hover td {
+  background: #f8fafc;
+}
+
+.ec-print-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Print Component Styles */
+.ec-print-container {
+  font-family: 'Inter', sans-serif;
+  color: #1e293b;
+}
+
+.ec-print-section {
+  margin-bottom: 2rem;
+}
+
+.ec-print-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 0.5rem;
+}
+
+.ec-print-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.ec-print-stat-card {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.ec-print-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.ec-print-stat-value {
+  display: block;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: white;
+    overflow: visible !important;
+  }
+
+  /* Hide everything by default */
+  body > * {
+    display: none !important;
+  }
+
+  /* Ensure the modal overlay is "visible" to the DOM but we hide its children except preview */
+  .report-modal-overlay {
+    position: static;
+    display: block !important;
+    background: white;
+    opacity: 1;
+    padding: 0;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+  }
+
+  .report-modal-container {
+    position: static;
+    display: block !important;
+    width: 100%;
+    max-width: none;
+    height: auto;
+    box-shadow: none;
+    transform: none !important;
+    border-radius: 0;
+    border: none;
+    background: white;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+  }
+
+  /* Hide modal UI elements */
+  .report-modal-header,
+  .report-modal-footer,
+  .report-filters-section,
+  .report-stats-grid,
+  .report-charts-grid,
+  .report-summary-section,
+  .report-close-btn {
+    display: none !important;
+  }
+
+  /* Show and style the preview section for print */
+  .report-modal-body {
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    background: white;
+  }
+
+  .report-preview-section {
+    display: block !important; /* Force show */
+    background: white;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .report-section-label {
+    display: none; /* Hide "Print Preview" label */
+  }
+
+  .report-paper-preview {
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+  }
+
+  /* Ensure Chart.js canvases print */
+  canvas {
+    max-width: 100% !important;
+  }
+}

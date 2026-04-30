@@ -1,0 +1,16 @@
+fastapi==0.109.0
+uvicorn==0.27.0
+pystac-client==0.7.6
+stackstac==0.5.0
+xarray==2024.1.1
+rioxarray==0.15.0
+geopandas==0.14.2
+shapely==2.0.2
+numpy==1.26.3
+pandas==2.2.0
+plotly==5.18.0
+dask==2024.1.1
+distributed==2024.1.1
+aiohttp==3.9.3
+python-multipart==0.0.9
+requests==2.31.0

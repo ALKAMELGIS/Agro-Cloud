@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agro Structures — GIS Map &amp; Data Entry</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.28/esri/themes/light/main.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; height: 100vh; }
+    #mapContainer { position: fixed; inset: 0; z-index: 1; }
+    #map { width: 100%; height: 100%; }
+    .form-panel {
+      position: fixed; top: 16px; left: 16px; bottom: 16px; width: min(460px, 96vw);
+      background: rgba(255, 255, 255, 0.98); border-radius: 14px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18); z-index: 2; overflow-y: auto;
+      display: flex; flex-direction: column; border: 1px solid #e8e8e8;
+    }
+    .form-panel::-webkit-scrollbar { width: 8px; }
+    .form-panel::-webkit-scrollbar-thumb { background: #aaa; border-radius: 8px; }
+    .panel-header {
+      background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%); color: #fff;
+      padding: 16px 18px; border-radius: 14px 14px 0 0; position: sticky; top: 0; z-index: 10;
+    }
+    .panel-header h1 { font-size: 18px; font-weight: 600; }
+    .panel-header p { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+    .panel-content { padding: 16px; flex: 1; }
+    .form-card {
+      background: #fff; border-radius: 10px; margin-bottom: 14px;
+      border: 1px solid #e4e4e4; overflow: hidden;
+    }
+    .form-card-header {
+      background: #f6f8fa; padding: 10px 14px; border-bottom: 2px solid #43a047;
+      font-weight: 600; color: #263238; font-size: 14px;
+    }
+    .form-card-body { padding: 14px; }
+    .form-row { margin-bottom: 12px; }
+    label { display: block; font-weight: 600; margin-bottom: 4px; color: #333; font-size: 11px; text-transform: capitalize; }
+    label .req { color: #c62828; }
+    input, select, textarea {
+      width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 13px;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none; border-color: #43a047; box-shadow: 0 0 0 2px rgba(67, 160, 71, 0.12);
+    }
+    .readonly-field { background: #f5f5f5; color: #555; }
+    .autofill-field { background: #f3f7f4; color: #1b4332; border-color: rgba(27, 67, 50, 0.25) !important; }
+    .search-error { border-color: #b71c1c !important; box-shadow: 0 0 0 3px rgba(183, 28, 28, 0.12); }
+    .search-group { display: flex; gap: 8px; align-items: center; }
+    .search-group input { flex: 1; }
+    .btn {
+      border: none; padding: 9px 14px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;
+    }
+    .btn-primary { background: #43a047; color: #fff; }
+    .btn-primary:hover { background: #388e3c; }
+    .btn-secondary { background: #1976d2; color: #fff; }
+    .btn-secondary:hover { background: #1565c0; }
+    .btn-muted { background: #90a4ae; color: #fff; }
+    .btn-muted:hover { background: #78909c; }
+    .message { padding: 8px 10px; border-radius: 6px; margin-top: 8px; font-size: 12px; display: none; }
+    .message.ok { display: block; background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
+    .message.err { display: block; background: #ffebee; color: #b71c1c; border: 1px solid #ffcdd2; }
+    .farm-info {
+      background: #fff8e1; padding: 10px; border-radius: 6px; margin: 8px 0; display: none;
+      font-size: 12px; border-left: 3px solid #ffa000;
+    }
+    .search-results {
+      position: absolute; top: 100%; left: 0; right: 88px; margin-top: 4px; max-height: 200px;
+      overflow-y: auto; background: #fff; border: 1px solid #ddd; border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); z-index: 100; display: none;
+    }
+    .search-result-item { padding: 8px 10px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 12px; }
+    .search-result-item:hover { background: #f5f5f5; }
+    .records-table { width: 100%; font-size: 11px; border-collapse: collapse; }
+    .records-table th { background: #f0f0f0; padding: 6px; text-align: left; border-bottom: 2px solid #ddd; }
+    .records-table td { padding: 5px 6px; border-bottom: 1px solid #eee; }
+    .meta-line { font-size: 11px; color: #666; margin-bottom: 10px; }
+    .loading { font-size: 12px; color: #666; padding: 8px 0; }
+  </style>
+</head>
+<body>
+  <div id="mapContainer"><div id="map"></div></div>
+
+  <div class="form-panel">
+    <div class="panel-header">
+      <h1>Agro Structures — Map &amp; Data Entry</h1>
+      <p>Part 1: farm identity (layer 21). Part 2: daily records (table 27). Map labels = Farm_Code.</p>
+    </div>
+    <div class="panel-content">
+      <div id="loadStatus" class="loading">Loading field definitions from the service…</div>
+
+      <div class="form-card">
+        <div class="form-card-header">Search &amp; select farm</div>
+        <div class="form-card-body">
+          <div class="form-row" style="position:relative;">
+            <label>Farm_Code <span class="req">*</span></label>
+            <div class="search-group">
+              <input type="text" id="searchFarmCode" placeholder="Type or paste Farm_Code" autocomplete="off" aria-describedby="mainMessage" aria-label="Farm code">
+              <button type="button" class="btn btn-secondary" id="btnSearch">Search</button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+          </div>
+          <div id="selectedFarmInfo" class="farm-info" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-header" id="mainCardTitle">Part 1 — Agro_Structures (identity)</div>
+        <div class="form-card-body">
+          <p class="meta-line" id="mainMeta"></p>
+          <div id="mainFormFields"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+            <button type="button" class="btn btn-secondary" id="btnSaveMain">Save feature attributes</button>
+            <button type="button" class="btn btn-muted" id="btnClear">Clear / reset map</button>
+          </div>
+          <div id="mainMessage" class="message"></div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card-header" id="relatedCardTitle">Part 2 — Crops_Planted (daily / crop records)</div>
+        <div class="form-card-body">
+          <p class="meta-line" id="relatedMeta"></p>
+          <div id="relatedFormFields"></div>
+          <div style="margin-top:12px;">
+            <button type="button" class="btn btn-primary" id="btnAddRelated">Add crop record</button>
+          </div>
+          <div id="relatedMessage" class="message"></div>
+          <h4 style="font-size:12px;margin:14px 0 8px;color:#455a64;">Recent crop records (this farm)</h4>
+          <div id="relatedGrid" style="max-height:240px;overflow:auto;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://js.arcgis.com/4.28/"></script>
+  <script>
+(function () {
+  const BASE_URL = "https://services1.arcgis.com/jz3ndhbYV5K9NwI8/arcgis/rest/services/Agro_Structures/FeatureServer";
+  const MAIN_ID = 21;
+  const RELATED_TABLE_ID = 27;
+  const MAIN_URL = BASE_URL + "/" + MAIN_ID;
+  const RELATED_URL = BASE_URL + "/" + RELATED_TABLE_ID;
+
+  const SKIP_MAIN = new Set([
+    "OBJECTID", "GlobalID", "Shape__Area", "Shape__Length",
+    "created_user", "created_date", "last_edited_user", "last_edited_date"
+  ]);
+  const SKIP_RELATED = new Set([
+    "OBJECTID_1", "GlobalID",
+    "created_user", "created_date", "last_edited_user", "last_edited_date"
+  ]);
+
+  /** Layer 21 Agro_Structures — Part 1 identity fields; primary key Farm_Code */
+  var MAIN_PART_ORDER = ["Farm_Code", "Farm_Name", "ZONE_ID", "ProjectCode", "Area_ha", "Structure_Type", "Country"];
+
+  /** Layer 27 Crops_Planted — auto-filled from farm; keep read-only in Part 2 form */
+  var RELATED_READONLY_NAMES = ["Farm_Code", "Farm_Name", "ZONE_ID", "Project_Code", "OBJECTID"];
+
+  let view, map, highlightLayer;
+  let mainLayerJson = null;
+  let relatedLayerJson = null;
+  let currentMainAttributes = null;
+  let currentMainOid = null;
+  let searchTimer = null;
+  let farmLookupTimer = null;
+  let farmLookupSeq = 0;
+  let lastValidatedFarmCode = "";
+
+  const AUTO_FILL_MAIN = new Set(["Farm_Code", "Farm_Name", "ZONE_ID", "ProjectCode", "Area_ha", "Structure_Type", "Country"]);
+
+  function showMsg(elId, text, isErr) {
+    const el = document.getElementById(elId);
+    el.textContent = text;
+    el.className = "message " + (isErr ? "err" : "ok");
+    setTimeout(function () { el.style.display = "none"; el.className = "message"; }, 6000);
+    el.style.display = "block";
+  }
+
+  function escapeSql(s) {
+    if (s == null) return "";
+    return String(s).replace(/'/g, "''");
+  }
+
+  function fieldSkip(field, skipSet) {
+    if (skipSet.has(field.name)) return true;
+    if (field.editable === false) return true;
+    return false;
+  }
+
+  function getSubtypeDomains(mainJson) {
+    const map = {};
+    const subs = mainJson.subtypes || [];
+    subs.forEach(function (st) {
+      map[st.code] = st.domains || {};
+    });
+    return map;
+  }
+
+  function effectiveDomain(field, mainJson, structureType) {
+    if (field.domain && field.domain.type === "codedValue") return field.domain;
+    const subs = getSubtypeDomains(mainJson);
+    const d = subs[structureType] && subs[structureType][field.name];
+    if (d && d.codedValues) return d;
+    return null;
+  }
+
+  function formatDateForInput(ms) {
+    if (ms == null || ms === "") return "";
+    const d = new Date(ms);
+    if (isNaN(d.getTime())) return "";
+    return d.toISOString().slice(0, 10);
+  }
+
+  function parseDateInput(val) {
+    if (!val) return null;
+    const t = new Date(val).getTime();
+    return isNaN(t) ? null : t;
+  }
+
+  function inputId(prefix, name) {
+    return prefix + "_" + name.replace(/[^a-zA-Z0-9_]/g, "_");
+  }
+
+  function buildFieldControl(field, prefix, mainJson, structureType) {
+    const id = inputId(prefix, field.name);
+    const alias = field.alias || field.name;
+    const domain = effectiveDomain(field, mainJson, structureType);
+
+    if (domain && domain.codedValues && domain.codedValues.length) {
+      let html = '<div class="form-row"><label for="' + id + '">' + alias + "</label><select id=\"" + id + "\" data-field=\"" + field.name + "\">";
+      html += '<option value="">—</option>';
+      domain.codedValues.forEach(function (cv) {
+        html += '<option value="' + cv.code + '">' + cv.name + "</option>";
+      });
+      html += "</select></div>";
+      return html;
+    }
+
+    const t = field.type;
+    if (t === "esriFieldTypeString") {
+      const maxl = field.length ? " maxlength=\"" + field.length + "\"" : "";
+      return '<div class="form-row"><label for="' + id + '">' + alias + '</label><input type="text" id="' + id + '" data-field="' + field.name + '"' + maxl + "></div>";
+    }
+    if (t === "esriFieldTypeDate") {
+      return '<div class="form-row"><label for="' + id + '">' + alias + '</label><input type="date" id="' + id + '" data-field="' + field.name + '"></div>';
+    }
+    if (t === "esriFieldTypeDouble" || t === "esriFieldTypeSingle") {
+      return '<div class="form-row"><label for="' + id + '">' + alias + '</label><input type="number" step="any" id="' + id + '" data-field="' + field.name + '"></div>';
+    }
+    if (t === "esriFieldTypeInteger" || t === "esriFieldTypeSmallInteger") {
+      return '<div class="form-row"><label for="' + id + '">' + alias + '</label><input type="number" step="1" id="' + id + '" data-field="' + field.name + '"></div>';
+    }
+    return '<div class="form-row"><label for="' + id + '">' + alias + '</label><input type="text" id="' + id + '" data-field="' + field.name + '"></div>';
+  }
+
+  function getMainPartFields() {
+    const byName = {};
+    mainLayerJson.fields.forEach(function (f) {
+      byName[f.name] = f;
+    });
+    const out = [];
+    MAIN_PART_ORDER.forEach(function (name) {
+      const f = byName[name];
+      if (f && !fieldSkip(f, SKIP_MAIN)) {
+        out.push(f);
+      }
+    });
+    return out;
+  }
+
+  function getStructureTypeFromForm() {
+    const el = document.querySelector('[data-field="Structure_Type"]');
+    if (!el) return mainLayerJson && mainLayerJson.defaultSubtypeCode != null ? mainLayerJson.defaultSubtypeCode : 1000;
+    const v = parseInt(el.value, 10);
+    return isNaN(v) ? 1000 : v;
+  }
+
+  function renderMainForm() {
+    const st = getStructureTypeFromForm();
+    const fields = getMainPartFields();
+    let html = "";
+    fields.forEach(function (f) {
+      html += buildFieldControl(f, "main", mainLayerJson, st);
+    });
+    document.getElementById("mainFormFields").innerHTML = html;
+    applyMainAutoFillReadonly();
+    document.getElementById("mainMeta").textContent =
+      "Identity fields (layer 21): ZONE_ID, Project_Code, Farm_Code, Structure_Type" +
+      (fields.some(function (x) { return x.name === "Area_ha"; }) ? ", Area_ha" : "") +
+      (fields.some(function (x) { return x.name === "Country"; }) ? ", Country" : "") +
+      ". Farm_Code is the map key.";
+  }
+
+  function applyMainAutoFillReadonly() {
+    AUTO_FILL_MAIN.forEach(function (name) {
+      const el = document.getElementById(inputId("main", name));
+      if (!el) return;
+      el.classList.add("readonly-field");
+      el.classList.add("autofill-field");
+      if (el.tagName === "SELECT") {
+        el.disabled = true;
+        el.setAttribute("aria-disabled", "true");
+      } else {
+        el.readOnly = true;
+        el.setAttribute("aria-readonly", "true");
+      }
+    });
+  }
+
+  function clearMainAutoFillValues() {
+    getMainPartFields().forEach(function (f) {
+      if (!AUTO_FILL_MAIN.has(f.name)) return;
+      const el = document.getElementById(inputId("main", f.name));
+      if (!el) return;
+      el.value = "";
+    });
+  }
+
+  function renderRelatedFormEmpty() {
+    const fields = relatedLayerJson.fields.filter(function (f) {
+      if (fieldSkip(f, SKIP_RELATED)) return false;
+      if (RELATED_READONLY_NAMES.indexOf(f.name) >= 0) return false;
+      return true;
+    });
+    let html = "";
+    fields.forEach(function (f) {
+      html += buildFieldControl(f, "rel", null, null);
+    });
+    document.getElementById("relatedFormFields").innerHTML = html;
+    document.getElementById("relatedMeta").textContent =
+      "Daily / crop fields (table 27). Farm_Code, ZONE_ID, Project_Code, etc. are set automatically from Part 1.";
+  }
+
+  function fillMainFromAttributes(att) {
+    if (!att) return;
+    getMainPartFields().forEach(function (f) {
+      const id = inputId("main", f.name);
+      const el = document.getElementById(id);
+      if (!el) return;
+      const v = att[f.name];
+      if (f.type === "esriFieldTypeDate") {
+        el.value = formatDateForInput(v);
+      } else if (v === null || v === undefined) {
+        el.value = "";
+      } else {
+        el.value = v;
+      }
+    });
+  }
+
+  function readMainAttributesForSave() {
+    const att = {};
+    getMainPartFields().forEach(function (f) {
+      const id = inputId("main", f.name);
+      const el = document.getElementById(id);
+      if (!el) return;
+      let val = el.value;
+      if (f.type === "esriFieldTypeDate") {
+        const ms = parseDateInput(val);
+        att[f.name] = ms;
+        return;
+      }
+      if (f.type === "esriFieldTypeDouble" || f.type === "esriFieldTypeSingle") {
+        att[f.name] = val === "" ? null : parseFloat(val);
+        return;
+      }
+      if (f.type === "esriFieldTypeInteger" || f.type === "esriFieldTypeSmallInteger") {
+        att[f.name] = val === "" ? null : parseInt(val, 10);
+        return;
+      }
+      att[f.name] = val === "" ? null : val;
+    });
+    if (currentMainOid != null) att.OBJECTID = currentMainOid;
+    return att;
+  }
+
+  function readRelatedAttributesForAdd(farmAtt) {
+    const att = {};
+    relatedLayerJson.fields.filter(function (f) { return !fieldSkip(f, SKIP_RELATED); }).forEach(function (f) {
+      if (RELATED_READONLY_NAMES.indexOf(f.name) >= 0) {
+        return;
+      }
+      const id = inputId("rel", f.name);
+      const el = document.getElementById(id);
+      if (!el) return;
+      let val = el.value;
+      if (f.type === "esriFieldTypeDate") {
+        att[f.name] = parseDateInput(val);
+        return;
+      }
+      if (f.type === "esriFieldTypeDouble" || f.type === "esriFieldTypeSingle") {
+        att[f.name] = val === "" ? null : parseFloat(val);
+        return;
+      }
+      if (f.type === "esriFieldTypeInteger" || f.type === "esriFieldTypeSmallInteger") {
+        att[f.name] = val === "" ? null : parseInt(val, 10);
+        return;
+      }
+      att[f.name] = val === "" ? null : val;
+    });
+    if (farmAtt) {
+      att.Farm_Code = farmAtt.Farm_Code;
+      att.Farm_Name = farmAtt.Farm_Name;
+      att.ZONE_ID = farmAtt.ZONE_ID;
+      if (farmAtt.ProjectCode != null) {
+        att.Project_Code = farmAtt.ProjectCode;
+      }
+      if (currentMainOid != null) {
+        att.OBJECTID = currentMainOid;
+      }
+    }
+    return att;
+  }
+
+  async function fetchJson(url) {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status + " " + r.statusText);
+    return r.json();
+  }
+
+  async function loadFarmByCode(farmCode) {
+    const w = "Farm_Code='" + escapeSql(farmCode) + "'";
+    const url = MAIN_URL + "/query?where=" + encodeURIComponent(w) + "&outFields=*&returnGeometry=true&f=json";
+    const data = await fetchJson(url);
+    if (!data.features || !data.features.length) return null;
+    return data.features[0];
+  }
+
+  function setLookupState(state, code, msg) {
+    const info = document.getElementById("selectedFarmInfo");
+    const inp = document.getElementById("searchFarmCode");
+    const btn = document.getElementById("btnSearch");
+    if (!info || !inp || !btn) return;
+
+    if (state === "idle") {
+      inp.removeAttribute("aria-busy");
+      inp.classList.remove("search-error");
+      inp.removeAttribute("aria-invalid");
+      btn.disabled = false;
+      return;
+    }
+
+    if (state === "loading") {
+      inp.setAttribute("aria-busy", "true");
+      inp.classList.remove("search-error");
+      inp.removeAttribute("aria-invalid");
+      btn.disabled = true;
+      info.style.display = "block";
+      info.textContent = (msg ? msg : "Looking up Farm_Code…") + (code ? " (" + code + ")" : "");
+      return;
+    }
+
+    if (state === "error") {
+      inp.removeAttribute("aria-busy");
+      inp.classList.add("search-error");
+      inp.setAttribute("aria-invalid", "true");
+      btn.disabled = false;
+      info.style.display = "block";
+      info.textContent = msg || "Invalid Farm_Code.";
+      return;
+    }
+
+    if (state === "success") {
+      inp.removeAttribute("aria-busy");
+      inp.classList.remove("search-error");
+      inp.removeAttribute("aria-invalid");
+      btn.disabled = false;
+    }
+  }
+
+  async function lookupAndLoadFarm(code) {
+    const clean = (code || "").trim();
+    if (!clean) return;
+    if (clean === lastValidatedFarmCode && currentMainAttributes && currentMainAttributes.Farm_Code === clean) return;
+
+    const seq = ++farmLookupSeq;
+    setLookupState("loading", clean);
+    showMsg("mainMessage", "Looking up…", false);
+
+    try {
+      const f = await loadFarmByCode(clean);
+      if (seq !== farmLookupSeq) return;
+
+      if (!f) {
+        currentMainAttributes = null;
+        currentMainOid = null;
+        lastValidatedFarmCode = "";
+        if (highlightLayer) highlightLayer.removeAll();
+        clearMainAutoFillValues();
+        setLookupState("error", clean, "No feature for Farm_Code '" + clean + "'.");
+        showMsg("mainMessage", "No feature for Farm_Code '" + clean + "'.", true);
+        return;
+      }
+
+      lastValidatedFarmCode = clean;
+      await onFarmLoaded(f);
+      setLookupState("success", clean);
+      showMsg("mainMessage", "Farm loaded.", false);
+    } catch (e) {
+      if (seq !== farmLookupSeq) return;
+      setLookupState("error", clean, (e && e.message ? e.message : "Lookup failed."));
+      showMsg("mainMessage", (e && e.message ? e.message : "Lookup failed."), true);
+    }
+  }
+
+  function zoomToEsriGeometry(geom) {
+    if (!geom) return;
+    require(["esri/geometry/Polygon", "esri/Graphic", "esri/symbols/SimpleFillSymbol"], function (Polygon, Graphic, SimpleFillSymbol) {
+      if (!highlightLayer || !view) return;
+      let g = geom;
+      if (geom.rings) {
+        g = new Polygon({ rings: geom.rings, spatialReference: geom.spatialReference || { wkid: 102100 } });
+      }
+      const sym = new SimpleFillSymbol({
+        color: [46, 125, 50, 0.25],
+        outline: { color: [183, 28, 28, 1], width: 2 }
+      });
+      highlightLayer.removeAll();
+      highlightLayer.add(new Graphic({ geometry: g, symbol: sym }));
+      view.goTo({ target: g, padding: { left: 480, top: 40, right: 40, bottom: 40 } }).catch(function () {});
+    });
+  }
+
+  async function onFarmLoaded(feature) {
+    const att = feature.attributes;
+    currentMainAttributes = att;
+    currentMainOid = att.OBJECTID;
+    lastValidatedFarmCode = att && att.Farm_Code ? String(att.Farm_Code) : "";
+    fillMainFromAttributes(att);
+    document.getElementById("selectedFarmInfo").style.display = "block";
+    document.getElementById("selectedFarmInfo").innerHTML =
+      "<strong>Selected:</strong> " + (att.Farm_Code || "") + " — " + (att.Farm_Name || "") +
+      "<br><span style='color:#2e7d32'>OBJECTID " + att.OBJECTID + "</span>";
+    zoomToEsriGeometry(feature.geometry);
+    await refreshRelatedGrid(att.Farm_Code);
+  }
+
+  async function refreshRelatedGrid(farmCode) {
+    const grid = document.getElementById("relatedGrid");
+    if (!farmCode) {
+      grid.innerHTML = "<p style='color:#999;font-size:12px'>Load a farm to list crop rows.</p>";
+      return;
+    }
+    const w = "Farm_Code='" + escapeSql(farmCode) + "'";
+    const url = RELATED_URL + "/query?where=" + encodeURIComponent(w) +
+      "&outFields=*&orderByFields=" + encodeURIComponent("Date DESC,Planting_Date DESC") + "&resultRecordCount=15&f=json";
+    try {
+      const data = await fetchJson(url);
+      const feats = data.features || [];
+      if (!feats.length) {
+        grid.innerHTML = "<p style='color:#999;font-size:12px'>No rows in Crops_Planted for this farm.</p>";
+        return;
+      }
+      const show = ["Date", "Crop_Type", "Country", "Variety", "Planting_Date", "Harvest_Date", "Note"];
+      let thead = "<tr>";
+      show.forEach(function (n) { thead += "<th>" + n + "</th>"; });
+      thead += "</tr>";
+      let body = "";
+      feats.forEach(function (f) {
+        const a = f.attributes;
+        body += "<tr>";
+        show.forEach(function (n) {
+          let v = a[n];
+          if (n.indexOf("Date") >= 0 && v != null) v = formatDateForInput(v);
+          body += "<td>" + (v != null && v !== "" ? v : "—") + "</td>";
+        });
+        body += "</tr>";
+      });
+      grid.innerHTML = "<table class='records-table'><thead>" + thead + "</thead><tbody>" + body + "</tbody></table>";
+    } catch (e) {
+      grid.innerHTML = "<p style='color:#c62828;font-size:12px'>Could not load table: " + e.message + "</p>";
+    }
+  }
+
+  async function saveMain() {
+    if (currentMainOid == null) {
+      showMsg("mainMessage", "Search and load a farm first.", true);
+      return;
+    }
+    const attributes = readMainAttributesForSave();
+    const feature = { attributes: attributes, geometry: null };
+    try {
+      const body = new URLSearchParams({ f: "json", features: JSON.stringify([feature]) });
+      const res = await fetch(MAIN_URL + "/updateFeatures", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+      });
+      const result = await res.json();
+      if (result.updateResults && result.updateResults[0] && result.updateResults[0].success) {
+        showMsg("mainMessage", "Feature updated.", false);
+        const again = await loadFarmByCode(attributes.Farm_Code || currentMainAttributes.Farm_Code);
+        if (again) await onFarmLoaded(again);
+      } else {
+        showMsg("mainMessage", "Update failed: " + JSON.stringify(result), true);
+      }
+    } catch (e) {
+      showMsg("mainMessage", e.message, true);
+    }
+  }
+
+  async function addRelated() {
+    if (!currentMainAttributes || !currentMainAttributes.Farm_Code) {
+      showMsg("relatedMessage", "Load a farm first.", true);
+      return;
+    }
+    const attributes = readRelatedAttributesForAdd(currentMainAttributes);
+    const feature = { attributes: attributes };
+    try {
+      const body = new URLSearchParams({ f: "json", features: JSON.stringify([feature]) });
+      const res = await fetch(RELATED_URL + "/addFeatures", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: body
+      });
+      const result = await res.json();
+      if (result.addResults && result.addResults[0] && result.addResults[0].success) {
+        showMsg("relatedMessage", "Crop record added.", false);
+        renderRelatedFormEmpty();
+        await refreshRelatedGrid(currentMainAttributes.Farm_Code);
+      } else {
+        showMsg("relatedMessage", "Add failed: " + JSON.stringify(result), true);
+      }
+    } catch (e) {
+      showMsg("relatedMessage", e.message, true);
+    }
+  }
+
+  function wireStructureTypeRefresh() {
+    document.getElementById("mainFormFields").addEventListener("change", function (ev) {
+      const t = ev.target;
+      if (t && t.getAttribute && t.getAttribute("data-field") === "Structure_Type") {
+        const prev = readMainAttributesForSave();
+        renderMainForm();
+        fillMainFromAttributes(prev);
+      }
+    });
+  }
+
+  function setupMapIdentify(viewInstance, fl) {
+    viewInstance.on("click", function (event) {
+      viewInstance.hitTest(event).then(function (response) {
+        const hit = response.results.filter(function (r) {
+          return r.graphic && r.graphic.layer === fl;
+        })[0];
+        if (!hit || !hit.graphic.attributes) return;
+        const code = hit.graphic.attributes.Farm_Code;
+        if (!code) return;
+        document.getElementById("searchFarmCode").value = code;
+        lookupAndLoadFarm(code);
+      });
+    });
+  }
+
+  function init() {
+    document.getElementById("loadStatus").textContent = "جاري تحميل الحقول والخريطة… / Loading fields and map…";
+
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/layers/GraphicsLayer",
+      "esri/request"
+    ], function (Map, MapView, FeatureLayer, GraphicsLayer, esriRequest) {
+      function fetchLayerMeta(url) {
+        return esriRequest(url + "?f=json", { responseType: "json", timeout: 60000 }).then(function (res) {
+          return res.data;
+        });
+      }
+
+      Promise.all([fetchLayerMeta(MAIN_URL), fetchLayerMeta(RELATED_URL)])
+        .then(function (pair) {
+          const a = pair[0];
+          const b = pair[1];
+          if (!a || !a.fields || !b || !b.fields) {
+            throw new Error("Invalid layer metadata");
+          }
+          mainLayerJson = a;
+          relatedLayerJson = b;
+        })
+        .catch(function (e) {
+          document.getElementById("loadStatus").textContent =
+            "تعذر تحميل بيانات الطبقة. تحقق من الاتصال أو جرّب fetch. / Failed to load layer metadata: " + (e && e.message ? e.message : e);
+        })
+        .then(function () {
+          if (!mainLayerJson || !relatedLayerJson) return;
+
+          document.getElementById("loadStatus").style.display = "none";
+          document.getElementById("mainCardTitle").textContent =
+            "Part 1 — " + (mainLayerJson.name || "Agro_Structures") + " (layer " + MAIN_ID + ")";
+          document.getElementById("relatedCardTitle").textContent =
+            "Part 2 — " + (relatedLayerJson.name || "Crops_Planted") + " (table " + RELATED_TABLE_ID + ")";
+
+          renderMainForm();
+          renderRelatedFormEmpty();
+          wireStructureTypeRefresh();
+
+          map = new Map({
+            basemap: "hybrid"
+          });
+          view = new MapView({
+            container: "map",
+            map: map,
+            center: [55.3, 25.5],
+            zoom: 9,
+            constraints: { rotationEnabled: false }
+          });
+
+          const fl = new FeatureLayer({
+            url: MAIN_URL,
+            outFields: ["*"],
+            popupEnabled: false,
+            opacity: 0.85,
+            labelsVisible: true,
+            minScale: 0,
+            maxScale: 0,
+            labelingInfo: [
+              {
+                labelExpressionInfo: {
+                  expression: "$feature.Farm_Code"
+                },
+                symbol: {
+                  type: "text",
+                  color: [28, 28, 28],
+                  haloColor: [255, 255, 255, 0.95],
+                  haloSize: 1,
+                  font: { family: "Arial", size: 11, weight: "bold" }
+                },
+                maxScale: 0,
+                minScale: 0
+              }
+            ]
+          });
+
+          highlightLayer = new GraphicsLayer({ title: "Selection highlight" });
+          map.add(fl);
+          map.add(highlightLayer);
+
+          fl.load().then(function () {
+            return view.when();
+          }).then(function () {
+            setupMapIdentify(view, fl);
+            const ext = fl.fullExtent && fl.fullExtent.xmin != null ? fl.fullExtent : mainLayerJson.extent;
+            if (ext) {
+              return view.goTo(ext).catch(function () {});
+            }
+          }).catch(function (err) {
+            console.error("Feature layer or map:", err);
+            document.getElementById("loadStatus").style.display = "block";
+            document.getElementById("loadStatus").textContent =
+              "تحذير: طبقة المعالم قد لا تظهر. / Map layer issue: " + (err && err.message ? err.message : String(err));
+          });
+
+          wireMapUi();
+        });
+    });
+  }
+
+  function wireMapUi() {
+
+    document.getElementById("btnSearch").addEventListener("click", async function () {
+      const code = document.getElementById("searchFarmCode").value.trim();
+      if (!code) return;
+      await lookupAndLoadFarm(code);
+      document.getElementById("searchResults").style.display = "none";
+    });
+
+    document.getElementById("searchFarmCode").addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const code = document.getElementById("searchFarmCode").value.trim();
+      if (!code) return;
+      lookupAndLoadFarm(code);
+      const box = document.getElementById("searchResults");
+      if (box) box.style.display = "none";
+    });
+
+    document.getElementById("searchFarmCode").addEventListener("blur", function () {
+      const code = document.getElementById("searchFarmCode").value.trim();
+      if (!code) return;
+      if (farmLookupTimer) clearTimeout(farmLookupTimer);
+      farmLookupTimer = setTimeout(function () {
+        const box = document.getElementById("searchResults");
+        if (box && box.style.display === "block") return;
+        lookupAndLoadFarm(code);
+      }, 250);
+    });
+
+    document.getElementById("searchFarmCode").addEventListener("keyup", function () {
+      const term = document.getElementById("searchFarmCode").value.trim();
+      const box = document.getElementById("searchResults");
+      if (searchTimer) clearTimeout(searchTimer);
+      if (term.length < 2) {
+        box.style.display = "none";
+        return;
+      }
+      searchTimer = setTimeout(async function () {
+        const w = "Farm_Code LIKE '%" + escapeSql(term) + "%'";
+        const url = MAIN_URL + "/query?where=" + encodeURIComponent(w) + "&outFields=Farm_Code,Farm_Name&returnGeometry=false&resultRecordCount=20&f=json";
+        try {
+          const data = await fetchJson(url);
+          box.innerHTML = "";
+          if (!data.features || !data.features.length) {
+            box.style.display = "none";
+            return;
+          }
+          data.features.forEach(function (feat) {
+            const a = feat.attributes;
+            const div = document.createElement("div");
+            div.className = "search-result-item";
+            div.textContent = (a.Farm_Code || "") + " — " + (a.Farm_Name || "");
+            div.addEventListener("click", async function () {
+              document.getElementById("searchFarmCode").value = a.Farm_Code || "";
+              box.style.display = "none";
+              if (a.Farm_Code) await lookupAndLoadFarm(a.Farm_Code);
+            });
+            box.appendChild(div);
+          });
+          box.style.display = "block";
+        } catch (e) {
+          console.error(e);
+        }
+      }, 400);
+    });
+
+    document.getElementById("btnSaveMain").addEventListener("click", saveMain);
+    document.getElementById("btnAddRelated").addEventListener("click", addRelated);
+    document.getElementById("btnClear").addEventListener("click", function () {
+      currentMainAttributes = null;
+      currentMainOid = null;
+      lastValidatedFarmCode = "";
+      setLookupState("idle");
+      document.getElementById("searchFarmCode").value = "";
+      document.getElementById("selectedFarmInfo").style.display = "none";
+      renderMainForm();
+      renderRelatedFormEmpty();
+      if (highlightLayer) highlightLayer.removeAll();
+      document.getElementById("relatedGrid").innerHTML = "";
+      if (view) view.goTo({ center: [55.3, 25.5], zoom: 8 });
+    });
+
+    document.addEventListener("click", function (e) {
+      const box = document.getElementById("searchResults");
+      const inp = document.getElementById("searchFarmCode");
+      if (box && inp && !inp.contains(e.target) && !box.contains(e.target)) box.style.display = "none";
+    });
+  }
+
+  init();
+})();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+npm install xlsx jspdf jspdf-autotable
