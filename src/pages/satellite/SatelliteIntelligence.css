@@ -211,6 +211,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .si-timeline-header {
@@ -269,6 +270,7 @@
   align-items: center;
   justify-content: space-between;
   overflow: visible;
+  flex: 1;
 }
 
 .track-line {
@@ -286,6 +288,62 @@
   z-index: 0;
 }
 
+.track-progress {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 2px;
+  transform: translateY(-50%);
+  background: linear-gradient(90deg, rgba(129, 140, 248, 0.6), rgba(168, 85, 247, 1));
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.65);
+  z-index: 0;
+  transition: width 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.si-timeline-slider {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  z-index: 2;
+  cursor: pointer;
+}
+
+.si-timeline-slider::-webkit-slider-runnable-track {
+  height: 44px;
+  background: transparent;
+}
+
+.si-timeline-slider::-moz-range-track {
+  height: 44px;
+  background: transparent;
+  border: none;
+}
+
+.si-timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 14px;
+  border-radius: 999px;
+  border: 2px solid rgba(224, 231, 255, 0.95);
+  background: radial-gradient(circle at top, #c4b5fd, #7c3aed);
+  box-shadow: 0 0 0 3px rgba(2, 6, 23, 0.9), 0 0 16px rgba(168, 85, 247, 0.8);
+}
+
+.si-timeline-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid rgba(224, 231, 255, 0.95);
+  background: radial-gradient(circle at top, #c4b5fd, #7c3aed);
+  box-shadow: 0 0 0 3px rgba(2, 6, 23, 0.9), 0 0 16px rgba(168, 85, 247, 0.8);
+}
+
 .track-point {
   position: relative;
   z-index: 1;
@@ -297,7 +355,8 @@
   height: 44px;
   cursor: pointer;
   opacity: 0.8;
-  transition: all 0.2s;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
 .track-point:hover {
@@ -466,7 +525,7 @@
   white-space: nowrap;
   opacity: 0.85;
   letter-spacing: 0.04em;
-  transition: opacity 0.2s, color 0.2s;
+  transition: opacity 0.22s ease, color 0.22s ease;
   color: rgba(248, 250, 252, 0.8);
   text-shadow: 0 0 6px rgba(15, 23, 42, 0.9);
 }
@@ -476,6 +535,16 @@
   opacity: 1;
   font-weight: 600;
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.9);
+}
+
+.si-timeline-current-date {
+  min-width: 96px;
+  text-align: right;
+  font-size: 10px;
+  font-weight: 600;
+  color: #e5e7eb;
+  letter-spacing: 0.04em;
+  text-shadow: 0 0 8px rgba(15, 23, 42, 0.9);
 }
 
 /* Top Right Navigation */

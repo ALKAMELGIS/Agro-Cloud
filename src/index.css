@@ -347,8 +347,8 @@ a:focus-visible {
 
 .layout.layout-topnav {
   flex-direction: column;
-  height: calc(100dvh - var(--header-height) - var(--topnav-height));
-  min-height: calc(100dvh - var(--header-height) - var(--topnav-height));
+  height: calc(100dvh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
 }
 
 .layout.layout-sidebar {

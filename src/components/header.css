@@ -1,25 +1,51 @@
 .agri-header {
   display: grid;
-  grid-template-columns: 240px 1fr 240px; /* Fixed width sides for balanced center */
+  grid-template-columns: minmax(220px, 1fr) minmax(80px, 1fr) minmax(220px, 1fr);
   align-items: center;
-  height: 64px;
-  background: #065f46;
+  height: 66px;
+  background:
+    linear-gradient(90deg, #034b37 0%, #055842 45%, #07624a 100%);
   color: rgba(255, 255, 255, 0.94);
   padding: 0 24px;
-  box-shadow: 0 18px 50px rgba(2, 6, 23, 0.18);
+  box-shadow: 0 16px 36px rgba(2, 6, 23, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.22);
   z-index: 2000;
   position: relative;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+  overflow: hidden;
 }
 
 .agri-header::before {
   content: '';
-  display: none;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at var(--hx, 50%) var(--hy, 35%), rgba(255, 255, 255, 0.08), transparent 46%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 48%);
+  pointer-events: none;
+  opacity: 0.55;
+  animation: headerGlowShift 9s ease-in-out infinite;
 }
 
 .agri-header::after {
   content: '';
-  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(190, 242, 100, 0.68) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes headerGlowShift {
+  0%, 100% {
+    transform: translateX(0);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateX(1.2%);
+    opacity: 1;
+  }
 }
 
 .header-left {
@@ -28,28 +54,44 @@
   gap: 12px;
   position: relative;
   z-index: 1;
+  min-height: 100%;
 }
 
 .logo-icon {
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 14px;
+  color: rgba(236, 253, 245, 1);
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  box-shadow: 0 12px 26px rgba(2, 6, 23, 0.22);
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border-radius: 7px;
+  border: none;
+  box-shadow: none;
+  filter: drop-shadow(0 4px 9px rgba(236, 253, 245, 0.62));
+}
+
+.logo-text-wrap {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.08;
 }
 
 .logo-text {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 15px;
   letter-spacing: -0.02em;
-  color: rgba(255, 255, 255, 0.94);
+  color: rgba(255, 255, 255, 0.99);
   font-family: var(--ds-font-sans);
+  text-shadow: 0 2px 6px rgba(2, 6, 23, 0.32);
+}
+
+.logo-subtext {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(226, 255, 246, 0.84);
 }
 
 .header-center {
@@ -61,23 +103,48 @@
 }
 
 .brand-logo {
-  height: 44px;
+  height: 32px;
   width: auto;
-  opacity: 0.95;
-  transition: all 0.2s ease;
+  opacity: 1;
+  filter: drop-shadow(0 6px 14px rgba(220, 252, 231, 0.68)) drop-shadow(0 12px 22px rgba(2, 6, 23, 0.38));
+  transition: transform 0.24s ease, opacity 0.24s ease, filter 0.24s ease;
 }
 
 .brand-logo:hover {
-  transform: scale(1.02);
+  transform: scale(1.04);
   opacity: 1;
+  filter: drop-shadow(0 7px 16px rgba(220, 252, 231, 0.72)) drop-shadow(0 13px 24px rgba(2, 6, 23, 0.4));
 }
 
 .header-right {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  min-height: 100%;
+  width: max-content;
+}
+
+.brand-logo-shell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  min-height: 100%;
+}
+
+.brand-dot {
+  display: none;
 }
 
 .profile-wrap {
@@ -207,11 +274,15 @@
   }
 
   .logo-text {
-    font-size: 16px;
+    font-size: 14px;
+  }
+
+  .logo-subtext {
+    font-size: 9px;
   }
 
   .brand-logo {
-    height: 38px;
+    height: 24px;
   }
 
   .profile-label {
@@ -221,19 +292,35 @@
 
 @media (max-width: 640px) {
   .agri-header {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr;
     padding: 0 12px;
-  }
-
-  .header-center {
-    display: none;
+    height: 62px;
+    background:
+      linear-gradient(90deg, #034b37 0%, #055842 45%, #07624a 100%);
   }
 
   .header-left {
-    min-width: 0;
+    display: none;
   }
 
   .header-right {
-    min-width: 0;
+    position: relative;
+    left: auto;
+    transform: none;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .logo-subtext {
+    display: none;
+  }
+
+  .brand-logo-shell {
+    padding: 5px 9px;
+  }
+
+  .brand-logo {
+    height: 22px;
+    filter: drop-shadow(0 5px 12px rgba(220, 252, 231, 0.62)) drop-shadow(0 9px 16px rgba(2, 6, 23, 0.34));
   }
 }

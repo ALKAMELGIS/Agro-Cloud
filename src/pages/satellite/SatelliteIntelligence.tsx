@@ -5,7 +5,8 @@ import './SatelliteIntelligence.css';
 import { parseFile } from '../../utils/FileLoader';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
-const MAPBOX_ALKAMELGIS_STYLE = 'mapbox://styles/alkamelgis/cmlkdwadt009k01sc8pzigp32';
+const MAPBOX_SATELLITE_STYLE =
+  import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/alkamelgis/cmlkdwadt009k01sc8pzigp32';
 const EMPTY_MAP_STYLE: any = {
   version: 8,
   sources: {},
@@ -43,6 +44,18 @@ const ESRI_SATELLITE_STYLE: any = {
   },
   layers: [{ id: 'esri', type: 'raster', source: 'esri' }]
 };
+const GOOGLE_SATELLITE_STYLE: any = {
+  version: 8,
+  sources: {
+    google: {
+      type: 'raster',
+      tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
+      tileSize: 256,
+      attribution: 'Imagery © Google'
+    }
+  },
+  layers: [{ id: 'google', type: 'raster', source: 'google' }]
+};
 const WMS_INSTANCE_ID = '7b6554b7-76f2-483e-a06d-90053e49f462';
 const WMS_URL = `https://services.sentinel-hub.com/ogc/wms/${WMS_INSTANCE_ID}`;
 const EARTH_CIRCUMFERENCE_METERS = 40075016.68557849;
@@ -70,10 +83,12 @@ interface BasemapOption {
 }
 
 const BASEMAPS: BasemapOption[] = [
-  { id: 'mapbox-alkamelgis', label: 'Satellite (alkamelgis)', style: MAPBOX_ALKAMELGIS_STYLE },
   { id: 'esri', label: 'Esri World Imagery', style: ESRI_SATELLITE_STYLE },
-  { id: 'osm', label: 'OSM', style: OSM_RASTER_STYLE }
+  { id: 'osm', label: 'OSM', style: OSM_RASTER_STYLE },
+  { id: 'google-earth', label: 'Google Earth', style: GOOGLE_SATELLITE_STYLE },
+  { id: 'mapbox-satellite', label: 'Satellite (Mapbox)', style: MAPBOX_SATELLITE_STYLE }
 ];
+const BASEMAP_FAILOVER_ORDER = ['mapbox-satellite', 'esri', 'google-earth', 'osm'];
 
 const LEGENDS: Record<string, { label: string; stops: { color: string; value: string }[] }> = {
   NDVI: {
@@ -117,9 +132,9 @@ interface CustomLayer {
 
 export default function SatelliteIntelligence() {
   const [viewState, setViewState] = useState({
-    longitude: 20,
-    latitude: 10,
-    zoom: 1.4,
+    longitude: -34,
+    latitude: 38,
+    zoom: 2,
     pitch: 0,
     bearing: 0
   });
@@ -140,16 +155,18 @@ export default function SatelliteIntelligence() {
   const [wmsLayers, setWmsLayers] = useState<WmsLayerInfo[]>([]);
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
   const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
-  const [basemapId, setBasemapId] = useState(() => (MAPBOX_TOKEN ? 'mapbox-alkamelgis' : 'esri'));
+  const [basemapId, setBasemapId] = useState('mapbox-satellite');
   const [isBasemapOpen, setIsBasemapOpen] = useState(false);
   const [is3DView, setIs3DView] = useState(true);
   const [cloudCoverage, setCloudCoverage] = useState(60);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
+  const [timelineIndex, setTimelineIndex] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const searchRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any | null>(null);
   const consoleErrorRef = useRef<typeof console.error | null>(null);
+  const fallbackLockRef = useRef(false);
 
   const applySelectedDate = (date: Date) => {
     const iso = date.toISOString().split('T')[0];
@@ -362,19 +379,41 @@ export default function SatelliteIntelligence() {
     return arr;
   }, []);
 
+  const formatTimelineDate = (date: Date) =>
+    date.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+
+  const applySelectedDateByIndex = (index: number) => {
+    if (!dates.length) return;
+    const safe = Math.max(0, Math.min(dates.length - 1, index));
+    setTimelineIndex(safe);
+    applySelectedDate(dates[safe].full);
+  };
+
+  useEffect(() => {
+    if (!dates.length) return;
+    const selectedIdx = dates.findIndex(d => d.full.toDateString() === selectedDate.toDateString());
+    if (selectedIdx >= 0 && selectedIdx !== timelineIndex) {
+      setTimelineIndex(selectedIdx);
+    }
+  }, [dates, selectedDate, timelineIndex]);
+
   useEffect(() => {
     if (!isTimelinePlaying || dates.length === 0) return;
 
-    let index = dates.findIndex(d => d.full.toDateString() === selectedDate.toDateString());
-    if (index === -1) index = 0;
-
     const interval = setInterval(() => {
-      index = (index + 1) % dates.length;
-      applySelectedDate(dates[index].full);
-    }, 1200);
+      setTimelineIndex(prev => {
+        const next = prev + 1;
+        if (next >= dates.length) {
+          setIsTimelinePlaying(false);
+          return prev;
+        }
+        applySelectedDate(dates[next].full);
+        return next;
+      });
+    }, 1100);
 
     return () => clearInterval(interval);
-  }, [isTimelinePlaying, dates, selectedDate]);
+  }, [isTimelinePlaying, dates]);
 
   useEffect(() => {
     const iso = selectedDate.toISOString().split('T')[0];
@@ -440,6 +479,23 @@ export default function SatelliteIntelligence() {
   const isMapboxStyle = typeof requestedStyle === 'string' && requestedStyle.startsWith('mapbox://');
   const mapStyle = isMapboxStyle ? (MAPBOX_TOKEN ? requestedStyle : ESRI_SATELLITE_STYLE) : requestedStyle;
 
+  const moveToNextBasemap = (reason?: string) => {
+    if (fallbackLockRef.current) return;
+    fallbackLockRef.current = true;
+    const currentIndex = BASEMAP_FAILOVER_ORDER.indexOf(basemapId);
+    const safeIndex = currentIndex >= 0 ? currentIndex : 0;
+    const nextId = BASEMAP_FAILOVER_ORDER[(safeIndex + 1) % BASEMAP_FAILOVER_ORDER.length];
+    if (nextId !== basemapId) {
+      setBasemapId(nextId);
+    }
+    window.setTimeout(() => {
+      fallbackLockRef.current = false;
+    }, 1200);
+    if (reason) {
+      console.warn(`[Basemap fallback] ${reason} -> ${nextId}`);
+    }
+  };
+
   useEffect(() => {
     const original = console.error;
     consoleErrorRef.current = original;
@@ -465,6 +521,12 @@ export default function SatelliteIntelligence() {
       const message = e?.error?.message || '';
       const url = e?.error?.url || '';
       const status = e?.error?.status;
+      const isBasemapRequest =
+        url.includes('api.mapbox.com') ||
+        url.includes('arcgisonline.com') ||
+        url.includes('tile.openstreetmap.org') ||
+        url.includes('opentopomap.org') ||
+        url.includes('mt1.google.com');
 
       if (
         message.includes('ERR_ABORTED') ||
@@ -472,6 +534,18 @@ export default function SatelliteIntelligence() {
         url.includes('api.mapbox.com/v4/mapbox.satellite') ||
         url.includes('services.sentinel-hub.com/ogc/wms')
       ) {
+        if ((message.includes('style') || message.includes('sprite') || message.includes('source')) && basemapId !== 'esri') {
+          setBasemapId('esri');
+        }
+
+        if (typeof e.preventDefault === 'function') {
+          e.preventDefault();
+        }
+        return;
+      }
+
+      if (isBasemapRequest || status >= 400 || message.toLowerCase().includes('tile')) {
+        moveToNextBasemap(message || 'Tile request failed');
         if (typeof e.preventDefault === 'function') {
           e.preventDefault();
         }
@@ -483,7 +557,14 @@ export default function SatelliteIntelligence() {
     return () => {
       map.off('error', handleMapError);
     };
-  }, []);
+  }, [basemapId]);
+
+  useEffect(() => {
+    // If Mapbox style is selected without token, immediately recover to Esri.
+    if (basemapId === 'mapbox-satellite' && !MAPBOX_TOKEN) {
+      setBasemapId('esri');
+    }
+  }, [basemapId]);
 
   const wmsTileUrl = useMemo(() => {
     const safeLayer = encodeURIComponent(activeWmsLayer);
@@ -505,7 +586,12 @@ export default function SatelliteIntelligence() {
               <button
                 type="button"
                 className={`si-timeline-run ${isTimelinePlaying ? 'playing' : ''}`}
-                onClick={() => setIsTimelinePlaying(prev => !prev)}
+                onClick={() => {
+                  if (!isTimelinePlaying && timelineIndex >= dates.length - 1) {
+                    applySelectedDateByIndex(0);
+                  }
+                  setIsTimelinePlaying(prev => !prev);
+                }}
                 aria-label={isTimelinePlaying ? 'Pause timeline' : 'Run timeline'}
                 title={isTimelinePlaying ? 'Pause timeline' : 'Run timeline'}
               >
@@ -513,8 +599,29 @@ export default function SatelliteIntelligence() {
               </button>
               <div className="si-timeline-track">
                 <div className="track-line"></div>
+                <div
+                  className="track-progress"
+                  style={{
+                    width: dates.length > 1
+                      ? `${(timelineIndex / (dates.length - 1)) * 100}%`
+                      : '0%'
+                  }}
+                ></div>
+                <input
+                  type="range"
+                  className="si-timeline-slider"
+                  min={0}
+                  max={Math.max(0, dates.length - 1)}
+                  step={1}
+                  value={timelineIndex}
+                  aria-label="Time slider"
+                  onChange={(e) => {
+                    setIsTimelinePlaying(false);
+                    applySelectedDateByIndex(Number(e.target.value));
+                  }}
+                />
                 {dates.map((date, idx) => {
-                  const isActive = date.full.toDateString() === selectedDate.toDateString();
+                  const isActive = idx === timelineIndex;
                   const isEdge = idx === 0 || idx === dates.length - 1;
                   const maxBaseLabels = 4;
                   const step = Math.max(1, Math.ceil(dates.length / maxBaseLabels));
@@ -525,24 +632,25 @@ export default function SatelliteIntelligence() {
                     <div
                       key={idx}
                       className={`track-point ${isActive ? 'active' : ''}`}
-                      onClick={() => applySelectedDate(date.full)}
+                      onClick={() => {
+                        setIsTimelinePlaying(false);
+                        applySelectedDateByIndex(idx);
+                      }}
                     >
                       <div className="point-dot"></div>
                       {showLabel && (
                         <span className="point-label">
-                          {date.day} {date.month}
+                          {formatTimelineDate(date.full)}
                         </span>
                       )}
                     </div>
                   );
                 })}
-                <div
-                  className={`track-point ${selectedDate.toDateString() === new Date().toDateString() ? 'active' : ''}`}
-                  onClick={() => applySelectedDate(new Date())}
-                >
-                  <div className="point-dot"></div>
-                  <span className="point-label">Today</span>
-                </div>
+              </div>
+              <div className="si-timeline-current-date">
+                {selectedDate.toDateString() === new Date().toDateString()
+                  ? 'Today'
+                  : selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
               </div>
             </div>
           </div>
@@ -648,14 +756,7 @@ export default function SatelliteIntelligence() {
               const url = e?.error?.url || '';
               const status = e?.error?.status;
 
-              if (
-                message.includes('ERR_ABORTED') ||
-                status === 0 ||
-                url.includes('api.mapbox.com/v4/mapbox.satellite') ||
-                url.includes('services.sentinel-hub.com/ogc/wms')
-              ) {
-                return;
-              }
+              if (url.includes('services.sentinel-hub.com/ogc/wms')) return;
               console.warn('Map Error:', e);
             }}
             onLoad={() => setIsMapLoaded(true)}

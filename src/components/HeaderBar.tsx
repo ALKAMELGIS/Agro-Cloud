@@ -50,10 +50,16 @@ export default function HeaderBar() {
   return (
     <header className="agri-header" ref={headerRef}>
       <div className="header-left">
-        <span className="logo-icon"><i className="fa-solid fa-leaf"></i></span>
-        <span className="logo-text">Agro Cloud</span>
+        <span className="logo-icon" aria-hidden="true"><i className="fa-solid fa-leaf"></i></span>
+        <div className="logo-text-wrap">
+          <span className="logo-text">Agro Cloud</span>
+          <span className="logo-subtext">Smart Agriculture Platform</span>
+        </div>
       </div>
-      <div className="header-center">
+      <div className="header-center" aria-hidden="true"></div>
+      <div className="header-right">
+        <div className="brand-logo-shell" aria-label="Elite Agro Projects">
+          <span className="brand-dot" aria-hidden="true"></span>
         <img
           className="brand-logo"
           src="https://eliteprojects.ae/wp-content/uploads/2022/07/logo-retraced-white-03.png"
@@ -61,8 +67,8 @@ export default function HeaderBar() {
           loading="lazy"
           decoding="async"
         />
+        </div>
       </div>
-      <div className="header-right"></div>
     </header>
   )
 }

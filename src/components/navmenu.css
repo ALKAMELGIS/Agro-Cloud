@@ -246,6 +246,13 @@
   display: flex;
 }
 
+/* Keep right-edge utility menus fully visible on desktop/tablet */
+.navmenu-utility-last .sublist,
+.navmenu-account .sublist {
+  left: auto;
+  right: 0;
+}
+
 .subitem {
   width: 100%;
   border: none;
