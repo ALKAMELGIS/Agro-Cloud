@@ -300,14 +300,32 @@
   }
 
   .header-left {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
+    display: block;
+    width: 100%;
+    position: relative;
+    min-height: 100%;
   }
 
   .header-right {
     display: none;
+  }
+
+  .logo-icon {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    margin: 0;
+  }
+
+  .logo-text-wrap {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    align-items: flex-end;
+    text-align: right;
+    line-height: 1.05;
   }
 
   .logo-subtext {
@@ -319,9 +337,5 @@
   .logo-text {
     font-size: 14px;
     line-height: 1;
-  }
-
-  .logo-text-wrap {
-    align-items: flex-start;
   }
 }
