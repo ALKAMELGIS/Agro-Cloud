@@ -5999,3 +5999,116 @@ aside {
     width: min(640px, 100%);
   }
 }
+
+/* ---------------- Responsive hardening ---------------- */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.page,
+.content,
+.card {
+  min-width: 0;
+}
+
+/* Prevent wide tables/blocks from breaking mobile viewport */
+.table-container,
+.mdm-table-wrap,
+.cx-table-wrap,
+.gis-layer-table-wrap,
+.gis-modal-table,
+.db-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    height: auto;
+    min-height: calc(100dvh - var(--header-height));
+  }
+
+  .content {
+    scrollbar-gutter: auto;
+  }
+
+  .page {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .layout.layout-sidebar {
+    flex-direction: column;
+  }
+
+  .page {
+    padding: 10px;
+  }
+
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .mdm-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mdm-top-actions {
+    width: 100%;
+  }
+
+  .mdm-top-actions > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .cx-table,
+  .mdm-table,
+  .ecph table {
+    min-width: 640px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .card {
+    padding: 10px;
+  }
+
+  .agri-header {
+    padding-inline: 10px;
+  }
+
+  .logo-text {
+    font-size: 15px;
+  }
+
+  .cx-table,
+  .mdm-table,
+  .ecph table {
+    min-width: 560px;
+  }
+}
