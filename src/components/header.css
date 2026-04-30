@@ -103,7 +103,7 @@
 }
 
 .brand-logo {
-  height: 32px;
+  height: 40px;
   width: auto;
   opacity: 1;
   filter: drop-shadow(0 6px 14px rgba(220, 252, 231, 0.68)) drop-shadow(0 12px 22px rgba(2, 6, 23, 0.38));
@@ -282,7 +282,7 @@
   }
 
   .brand-logo {
-    height: 24px;
+    height: 28px;
   }
 
   .profile-label {
@@ -300,27 +300,28 @@
   }
 
   .header-left {
-    display: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
   }
 
   .header-right {
-    position: relative;
-    left: auto;
-    transform: none;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .logo-subtext {
     display: none;
   }
 
-  .brand-logo-shell {
-    padding: 5px 9px;
+  .logo-subtext {
+    display: block;
+    font-size: 9px;
+    opacity: 0.95;
   }
 
-  .brand-logo {
-    height: 22px;
-    filter: drop-shadow(0 5px 12px rgba(220, 252, 231, 0.62)) drop-shadow(0 9px 16px rgba(2, 6, 23, 0.34));
+  .logo-text {
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .logo-text-wrap {
+    align-items: flex-start;
   }
 }

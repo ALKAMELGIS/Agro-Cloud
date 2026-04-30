@@ -210,8 +210,22 @@
 .si-timeline-inline {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   width: 100%;
+}
+
+.si-timeline-mode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+  background: radial-gradient(circle at top left, #020617, #020617);
+  color: #e5e7eb;
+  font-size: 11px;
 }
 
 .si-timeline-header {
@@ -545,6 +559,14 @@
   color: #e5e7eb;
   letter-spacing: 0.04em;
   text-shadow: 0 0 8px rgba(15, 23, 42, 0.9);
+}
+
+.si-timeline-hint {
+  flex-basis: 100%;
+  font-size: 10px;
+  color: rgba(226, 232, 240, 0.88);
+  letter-spacing: 0.02em;
+  margin-top: -2px;
 }
 
 /* Top Right Navigation */
@@ -1675,5 +1697,50 @@ input:checked + .slider:before {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .si-top-bar {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 8px 10px;
+  }
+
+  .si-top-card-center {
+    padding-inline: 2px;
+  }
+
+  .si-timeline-inline {
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .si-timeline-track {
+    min-width: 0;
+  }
+
+  .point-label {
+    font-size: 9px;
+  }
+
+  .si-timeline-current-date {
+    min-width: 72px;
+    font-size: 9px;
+  }
+
+  .si-timeline-hint {
+    font-size: 9px;
+    line-height: 1.25;
+  }
+
+  .si-map-search {
+    top: 10px;
+    left: 10px;
+  }
+
+  .si-basemap-toggle {
+    left: 10px;
+    bottom: 88px;
   }
 }

@@ -5,65 +5,19 @@ import './SatelliteIntelligence.css';
 import { parseFile } from '../../utils/FileLoader';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
-const MAPBOX_SATELLITE_STYLE =
-  import.meta.env.VITE_MAPBOX_STYLE || 'mapbox://styles/alkamelgis/cmlkdwadt009k01sc8pzigp32';
-const EMPTY_MAP_STYLE: any = {
-  version: 8,
-  sources: {},
-  layers: [
-    {
-      id: 'background',
-      type: 'background',
-      paint: {
-        'background-color': '#020617'
-      }
-    }
-  ]
-};
-const OSM_RASTER_STYLE: any = {
-  version: 8,
-  sources: {
-    osm: {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors'
-    }
-  },
-  layers: [{ id: 'osm', type: 'raster', source: 'osm' }]
-};
-const ESRI_SATELLITE_STYLE: any = {
-  version: 8,
-  sources: {
-    esri: {
-      type: 'raster',
-      tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-      tileSize: 256,
-      attribution: 'Tiles © Esri'
-    }
-  },
-  layers: [{ id: 'esri', type: 'raster', source: 'esri' }]
-};
-const GOOGLE_SATELLITE_STYLE: any = {
-  version: 8,
-  sources: {
-    google: {
-      type: 'raster',
-      tiles: ['https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
-      tileSize: 256,
-      attribution: 'Imagery © Google'
-    }
-  },
-  layers: [{ id: 'google', type: 'raster', source: 'google' }]
-};
+
+const BASEMAP_STYLES = {
+  esri: 'mapbox://styles/mapbox/satellite-streets-v12',
+  'google-earth': 'mapbox://styles/mapbox/satellite-v9',
+  osm: 'mapbox://styles/mapbox/outdoors-v12'
+} as const;
 const WMS_INSTANCE_ID = '7b6554b7-76f2-483e-a06d-90053e49f462';
 const WMS_URL = `https://services.sentinel-hub.com/ogc/wms/${WMS_INSTANCE_ID}`;
 const EARTH_CIRCUMFERENCE_METERS = 40075016.68557849;
 const ERROR_FILTER_PATTERNS = [
   'net::ERR_ABORTED',
   'services.sentinel-hub.com/ogc/wms',
-  'sh.dataspace.copernicus.eu/ogc/wms',
-  'api.mapbox.com/v4/mapbox.satellite'
+  'sh.dataspace.copernicus.eu/ogc/wms'
 ];
 
 interface WmsLayerInfo {
@@ -79,16 +33,14 @@ const FALLBACK_WMS_LAYERS: WmsLayerInfo[] = [
 interface BasemapOption {
   id: string;
   label: string;
-  style: any;
 }
 
 const BASEMAPS: BasemapOption[] = [
-  { id: 'esri', label: 'Esri World Imagery', style: ESRI_SATELLITE_STYLE },
-  { id: 'osm', label: 'OSM', style: OSM_RASTER_STYLE },
-  { id: 'google-earth', label: 'Google Earth', style: GOOGLE_SATELLITE_STYLE },
-  { id: 'mapbox-satellite', label: 'Satellite (Mapbox)', style: MAPBOX_SATELLITE_STYLE }
+  { id: 'esri', label: 'Esri World Imagery' },
+  { id: 'google-earth', label: 'Google Earth' },
+  { id: 'osm', label: 'OSM' }
 ];
-const BASEMAP_FAILOVER_ORDER = ['mapbox-satellite', 'esri', 'google-earth', 'osm'];
+const BASEMAP_FAILOVER_ORDER = ['esri', 'google-earth', 'osm'];
 
 const LEGENDS: Record<string, { label: string; stops: { color: string; value: string }[] }> = {
   NDVI: {
@@ -134,14 +86,11 @@ export default function SatelliteIntelligence() {
   const [viewState, setViewState] = useState({
     longitude: -34,
     latitude: 38,
-    zoom: 2,
-    pitch: 0,
-    bearing: 0
+    zoom: 2
   });
 
   const [wmsLayer, setWmsLayer] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [customLayers, setCustomLayers] = useState<CustomLayer[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -155,9 +104,8 @@ export default function SatelliteIntelligence() {
   const [wmsLayers, setWmsLayers] = useState<WmsLayerInfo[]>([]);
   const [isLoadingLayers, setIsLoadingLayers] = useState(false);
   const [isLayerDropdownOpen, setIsLayerDropdownOpen] = useState(false);
-  const [basemapId, setBasemapId] = useState('mapbox-satellite');
+  const [basemapId, setBasemapId] = useState('esri');
   const [isBasemapOpen, setIsBasemapOpen] = useState(false);
-  const [is3DView, setIs3DView] = useState(true);
   const [cloudCoverage, setCloudCoverage] = useState(60);
   const [isTimelinePlaying, setIsTimelinePlaying] = useState(false);
   const [timelineIndex, setTimelineIndex] = useState(0);
@@ -173,6 +121,16 @@ export default function SatelliteIntelligence() {
     setSelectedDate(date);
     setTimeSeriesStart(prev => (prev && iso < prev ? iso : prev || iso));
     setTimeSeriesEnd(prev => (prev && iso > prev ? iso : prev || iso));
+  };
+
+  const ensureTimelineLayerActive = () => {
+    if (wmsLayer) return;
+    const preferred =
+      wmsLayers.find(l => l.name.toUpperCase().includes('NDVI'))?.name ||
+      wmsLayers[0]?.name ||
+      FALLBACK_WMS_LAYERS[0]?.name ||
+      '';
+    if (preferred) setWmsLayer(preferred);
   };
 
   const getGeoJsonBounds = (geojson: any): [number, number, number, number] | null => {
@@ -243,8 +201,8 @@ export default function SatelliteIntelligence() {
           if (mapInstance && typeof mapInstance.fitBounds === 'function') {
             mapInstance.fitBounds(
               [
-                [minX, minY],
-                [maxX, maxY]
+                [minY, minX],
+                [maxY, maxX]
               ],
               { padding: 80, duration: 800 }
             );
@@ -267,37 +225,6 @@ export default function SatelliteIntelligence() {
     } finally {
       event.target.value = '';
     }
-  };
-
-  const toggle3DView = () => {
-    const mapInstance = mapRef.current?.getMap ? mapRef.current.getMap() : mapRef.current;
-    const nextIs3D = !is3DView;
-    setIs3DView(nextIs3D);
-
-    const pitch = nextIs3D ? Math.max(viewState.pitch || 0, 55) : 0;
-    const bearing = viewState.bearing || 0;
-    const projection = nextIs3D ? { name: 'globe' as const } : { name: 'mercator' as const };
-
-    if (mapInstance && typeof mapInstance.setProjection === 'function') {
-      try {
-        mapInstance.setProjection(projection);
-      } catch {
-      }
-    }
-
-    if (mapInstance && typeof mapInstance.easeTo === 'function') {
-      mapInstance.easeTo({
-        pitch,
-        bearing,
-        duration: 800
-      });
-    }
-
-    setViewState(prev => ({
-      ...prev,
-      pitch,
-      bearing
-    }));
   };
 
   const handleSelectWmsLayer = (layerName: string) => {
@@ -324,14 +251,10 @@ export default function SatelliteIntelligence() {
     if (!q) return;
     setIsSearching(true);
     try {
-      const response = MAPBOX_TOKEN
-        ? await fetch(
-            `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${MAPBOX_TOKEN}&limit=5`
-          )
-        : await fetch(
-            `https://nominatim.openstreetmap.org/search?format=geojson&limit=5&q=${encodeURIComponent(q)}`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=geojson&limit=5&q=${encodeURIComponent(q)}`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
       if (response.ok) {
         const data = await response.json();
         const features = Array.isArray(data?.features)
@@ -357,9 +280,7 @@ export default function SatelliteIntelligence() {
       ...prev,
       longitude: lng,
       latitude: lat,
-      zoom: 11,
-      pitch: 45,
-      bearing: 0
+      zoom: 11
     }));
     setSearchQuery(feature.text || feature?.properties?.name || feature?.properties?.display_name || '');
     setShowSearchResults(false);
@@ -386,6 +307,7 @@ export default function SatelliteIntelligence() {
     if (!dates.length) return;
     const safe = Math.max(0, Math.min(dates.length - 1, index));
     setTimelineIndex(safe);
+    ensureTimelineLayerActive();
     applySelectedDate(dates[safe].full);
   };
 
@@ -474,10 +396,8 @@ export default function SatelliteIntelligence() {
     : undefined;
   const wmsDate = selectedDate.toISOString().split('T')[0];
   const sentinelVisible = !!wmsLayer;
-  const currentBasemap = BASEMAPS.find(b => b.id === basemapId) || BASEMAPS[0];
-  const requestedStyle = currentBasemap.style || EMPTY_MAP_STYLE;
-  const isMapboxStyle = typeof requestedStyle === 'string' && requestedStyle.startsWith('mapbox://');
-  const mapStyle = isMapboxStyle ? (MAPBOX_TOKEN ? requestedStyle : ESRI_SATELLITE_STYLE) : requestedStyle;
+  const currentBasemapId = (BASEMAPS.find(b => b.id === basemapId)?.id || 'esri') as keyof typeof BASEMAP_STYLES;
+  const currentBasemapStyle = BASEMAP_STYLES[currentBasemapId];
 
   const moveToNextBasemap = (reason?: string) => {
     if (fallbackLockRef.current) return;
@@ -513,59 +433,6 @@ export default function SatelliteIntelligence() {
     };
   }, []);
 
-  useEffect(() => {
-    const map = mapRef.current?.getMap ? mapRef.current.getMap() : mapRef.current;
-    if (!map || !map.on) return;
-
-    const handleMapError = (e: any) => {
-      const message = e?.error?.message || '';
-      const url = e?.error?.url || '';
-      const status = e?.error?.status;
-      const isBasemapRequest =
-        url.includes('api.mapbox.com') ||
-        url.includes('arcgisonline.com') ||
-        url.includes('tile.openstreetmap.org') ||
-        url.includes('opentopomap.org') ||
-        url.includes('mt1.google.com');
-
-      if (
-        message.includes('ERR_ABORTED') ||
-        status === 0 ||
-        url.includes('api.mapbox.com/v4/mapbox.satellite') ||
-        url.includes('services.sentinel-hub.com/ogc/wms')
-      ) {
-        if ((message.includes('style') || message.includes('sprite') || message.includes('source')) && basemapId !== 'esri') {
-          setBasemapId('esri');
-        }
-
-        if (typeof e.preventDefault === 'function') {
-          e.preventDefault();
-        }
-        return;
-      }
-
-      if (isBasemapRequest || status >= 400 || message.toLowerCase().includes('tile')) {
-        moveToNextBasemap(message || 'Tile request failed');
-        if (typeof e.preventDefault === 'function') {
-          e.preventDefault();
-        }
-        return;
-      }
-    };
-
-    map.on('error', handleMapError);
-    return () => {
-      map.off('error', handleMapError);
-    };
-  }, [basemapId]);
-
-  useEffect(() => {
-    // If Mapbox style is selected without token, immediately recover to Esri.
-    if (basemapId === 'mapbox-satellite' && !MAPBOX_TOKEN) {
-      setBasemapId('esri');
-    }
-  }, [basemapId]);
-
   const wmsTileUrl = useMemo(() => {
     const safeLayer = encodeURIComponent(activeWmsLayer);
     const start = timeSeriesStart || wmsDate;
@@ -590,6 +457,7 @@ export default function SatelliteIntelligence() {
                   if (!isTimelinePlaying && timelineIndex >= dates.length - 1) {
                     applySelectedDateByIndex(0);
                   }
+                  ensureTimelineLayerActive();
                   setIsTimelinePlaying(prev => !prev);
                 }}
                 aria-label={isTimelinePlaying ? 'Pause timeline' : 'Run timeline'}
@@ -597,6 +465,9 @@ export default function SatelliteIntelligence() {
               >
                 <i className={isTimelinePlaying ? 'fa-solid fa-pause' : 'fa-solid fa-play'}></i>
               </button>
+              <div className="si-timeline-mode">
+                <i className="fa-regular fa-clock" aria-hidden="true"></i>
+              </div>
               <div className="si-timeline-track">
                 <div className="track-line"></div>
                 <div
@@ -646,11 +517,6 @@ export default function SatelliteIntelligence() {
                     </div>
                   );
                 })}
-              </div>
-              <div className="si-timeline-current-date">
-                {selectedDate.toDateString() === new Date().toDateString()
-                  ? 'Today'
-                  : selectedDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
               </div>
             </div>
           </div>
@@ -742,24 +608,26 @@ export default function SatelliteIntelligence() {
           <Map
             ref={mapRef}
             {...viewState}
-            onMove={evt => setViewState(evt.viewState)}
+            onMove={evt =>
+              setViewState({
+                longitude: evt.viewState.longitude,
+                latitude: evt.viewState.latitude,
+                zoom: evt.viewState.zoom
+              })
+            }
             style={{ width: '100%', height: '100%' }}
-            mapStyle={mapStyle}
-            mapboxAccessToken={MAPBOX_TOKEN || undefined}
-            projection={is3DView ? { name: 'globe' } : { name: 'mercator' }}
-            renderWorldCopies={!is3DView}
-            dragRotate={is3DView}
-            pitchWithRotate={is3DView}
-            fog={is3DView ? { 'range': [0.5, 10], 'color': '#020617', 'horizon-blend': 0.1 } : undefined}
+            mapStyle={currentBasemapStyle as any}
+            mapboxAccessToken={MAPBOX_TOKEN}
+            projection={{ name: 'globe' }}
+            renderWorldCopies
+            dragRotate
+            pitchWithRotate
+            fog={{ range: [0.5, 10], color: '#020617', 'horizon-blend': 0.1 } as any}
             onError={(e: any) => {
-              const message = e?.error?.message || '';
               const url = e?.error?.url || '';
-              const status = e?.error?.status;
-
               if (url.includes('services.sentinel-hub.com/ogc/wms')) return;
-              console.warn('Map Error:', e);
+              moveToNextBasemap('Basemap failed');
             }}
-            onLoad={() => setIsMapLoaded(true)}
           >
             {customLayers.map(layer => (
               layer.visible && (
@@ -780,21 +648,11 @@ export default function SatelliteIntelligence() {
                       'line-width': 1.5
                     }}
                   />
-                  <Layer
-                    id={`${layer.id}-circle`}
-                    type="circle"
-                    paint={{
-                      'circle-radius': 4,
-                      'circle-color': '#22c55e',
-                      'circle-stroke-width': 1,
-                      'circle-stroke-color': '#052e16'
-                    }}
-                  />
                 </Source>
               )
             ))}
 
-            {isMapLoaded && sentinelVisible && (
+            {sentinelVisible && (
               <Source
                 key={`sentinel-${activeWmsLayer}-${wmsDate}`}
                 id="sentinel-source"

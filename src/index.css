@@ -6055,12 +6055,26 @@ canvas {
 }
 
 @media (max-width: 768px) {
+  .layout,
+  .layout.layout-topnav {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   .layout.layout-sidebar {
     flex-direction: column;
   }
 
+  .content {
+    overflow-x: hidden;
+  }
+
   .page {
     padding: 10px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
 
   .grid-3 {
@@ -6096,6 +6110,8 @@ canvas {
 
   .card {
     padding: 10px;
+    width: 100%;
+    max-width: 100%;
   }
 
   .agri-header {
