@@ -582,3 +582,103 @@
     transition: none !important;
   }
 }
+
+/* Force horizontal mobile navigation layout */
+.navmenu[data-viewport="mobile"] {
+  width: 100%;
+  height: auto;
+  border-right: none;
+  border-bottom: 1px solid var(--nav-border);
+  padding: 8px 10px;
+  min-height: 0;
+  align-items: center;
+}
+
+.navmenu[data-viewport="mobile"].navmenu-collapsed {
+  width: 100%;
+}
+
+.navmenu[data-viewport="mobile"] .nav-collapse-toggle,
+.navmenu[data-viewport="mobile"] .nav-toggle {
+  display: none;
+}
+
+.navmenu[data-viewport="mobile"] .navmenu-list {
+  width: 100%;
+  max-height: none !important;
+  overflow: visible;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  transition: none;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px 8px;
+  padding: 2px 2px 8px;
+}
+
+.navmenu[data-viewport="mobile"] .navmenu-li,
+.navmenu[data-viewport="mobile"] .group {
+  width: calc(20% - 8px);
+  min-width: 62px;
+  max-width: 88px;
+  flex: 0 0 calc(20% - 8px);
+}
+
+.navmenu[data-viewport="mobile"] .item,
+.navmenu[data-viewport="mobile"] .group-header {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  padding: 7px 4px;
+  border-radius: 12px;
+}
+
+.navmenu[data-viewport="mobile"] .item .label,
+.navmenu[data-viewport="mobile"] .group-header .label,
+.navmenu[data-viewport="mobile"] .group-header .chev {
+  display: none;
+}
+
+.navmenu[data-viewport="mobile"] .icon {
+  width: 32px;
+  height: 32px;
+}
+
+.navmenu[data-viewport="mobile"] .sublist {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 220px;
+  max-width: min(320px, 92vw);
+  background: var(--nav-bg);
+  padding: 8px;
+  border: 1px solid var(--nav-border);
+  box-shadow: var(--ds-shadow-lg);
+  border-radius: 12px;
+  z-index: 2600;
+}
+
+.navmenu[data-viewport="mobile"] .subitem {
+  justify-content: flex-start;
+}
+
+@media (max-width: 480px) {
+  .navmenu[data-viewport="mobile"] .navmenu-li,
+  .navmenu[data-viewport="mobile"] .group {
+    width: calc(25% - 8px);
+    flex: 0 0 calc(25% - 8px);
+    max-width: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .navmenu[data-viewport="mobile"] .navmenu-li,
+  .navmenu[data-viewport="mobile"] .group {
+    width: calc(33.333% - 8px);
+    flex: 0 0 calc(33.333% - 8px);
+  }
+}
