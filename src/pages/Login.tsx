@@ -281,6 +281,31 @@ export default function Login({ onLogin }: LoginProps) {
   return (
     <div className="login-page-root">
       <div className="login-bg-video" aria-hidden="true">
+        <video
+          id="banner-two"
+          preload="metadata"
+          className="video-background"
+          poster="https://www.esri.com/content/dam/esrisites/en-us/parallax-gis/scene-poster.jpg"
+          muted
+          playsInline
+          autoPlay
+          loop
+        >
+          <source
+            media="(min-width: 1024px)"
+            src="https://www.esri.com/content/dam/esrisites/en-us/parallax-gis/wigis-scene-2-0521-large.mp4"
+            type="video/mp4"
+          />
+          <source
+            media="(min-width: 780px)"
+            src="https://www.esri.com/content/dam/esrisites/en-us/parallax-gis/wigis-scene-2-0521-large.mp4"
+            type="video/mp4"
+          />
+          <source
+            src="https://www.esri.com/content/dam/esrisites/en-us/parallax-gis/wigis-scene-2-0521-large.mp4"
+            type="video/mp4"
+          />
+        </video>
       </div>
       <div className="login-bg-overlay"></div>
       <div className="login-page-content">
