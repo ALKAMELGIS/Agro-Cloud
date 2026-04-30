@@ -1,3 +1,3 @@
 export const appConfig = {
-  basePath: '/AgroCloud/',
+  basePath: '/Agro-Cloud/',
 }
