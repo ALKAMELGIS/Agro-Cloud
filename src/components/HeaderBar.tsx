@@ -50,23 +50,33 @@ export default function HeaderBar() {
   return (
     <header className="agri-header" ref={headerRef}>
       <div className="header-left">
-        <span className="logo-icon" aria-hidden="true"><i className="fa-solid fa-leaf"></i></span>
+        <span className="logo-icon" aria-hidden="true">
+          <i className="fa-solid fa-leaf"></i>
+        </span>
         <div className="logo-text-wrap">
           <span className="logo-text">Agro Cloud</span>
           <span className="logo-subtext">Smart Agriculture Platform</span>
         </div>
       </div>
-      <div className="header-center" aria-hidden="true"></div>
-      <div className="header-right">
-        <div className="brand-logo-shell" aria-label="Elite Agro Projects">
-          <span className="brand-dot" aria-hidden="true"></span>
+
+      <div className="header-center">
         <img
-          className="brand-logo"
+          className="header-brand-logo"
           src="https://eliteprojects.ae/wp-content/uploads/2022/07/logo-retraced-white-03.png"
           alt="Elite Agro Projects"
+          width={160}
+          height={48}
           loading="lazy"
           decoding="async"
         />
+      </div>
+
+      <div className="header-right">
+        <div className="elite-brand" aria-label="Elite Agro Projects">
+          <div className="elite-text-wrap">
+            <span className="elite-title">ELITE</span>
+            <span className="elite-sub">AGRO PROJECTS</span>
+          </div>
         </div>
       </div>
     </header>
